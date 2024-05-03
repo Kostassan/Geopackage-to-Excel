@@ -11,6 +11,8 @@ from ttkthemes import ThemedTk
 import geopandas as gpd
 from openpyxl import load_workbook
 from datetime import datetime
+import sqlite3
+
 
 # Global variables to store paths
 geopackage_path = None
@@ -79,13 +81,14 @@ def process_files(geopackage_path, excel_path):
             damage = entry.get('Damaged', None)  # Assuming it's a valid column
             dead = entry.get('Dead', None)  # Assuming it's a valid column
             health = entry.get('Growth_Hea', None)  # Assuming it's a valid column
+            reason = entry['Cause of Damage']
 
             # Update the cells in the corresponding row and column
             plot1_sheet.cell(row=next_row_index, column=column_index).value = height
             plot1_sheet.cell(row=next_row_index, column=17).value = damage
             plot1_sheet.cell(row=next_row_index, column=18).value = dead
             plot1_sheet.cell(row=next_row_index, column=21).value = health
-
+            plot1_sheet.cell(row=next_row_index, column=19).value = reason
             # Move to the next row
             next_row_index += 1
 
@@ -98,6 +101,19 @@ def process_files(geopackage_path, excel_path):
     except Exception as e:
         print(f"Error saving Excel: {e}")
         messagebox.showerror("Error", f"Failed to save Excel: {e}")
+        
+    
+    try:
+        with sqlite3.connect(geopackage_path) as conn:
+            cursor = conn.cursor()
+            # Delete all rows in the specified layer/table
+            delete_query = f"DELETE FROM '{desired_layer}'"
+            cursor.execute(delete_query)
+            conn.commit()  # Commit the changes to the database
+            print("Data in the GeoPackage layer deleted after processing.")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to clear GeoPackage layer: {e}")                             
+ 
     
 
 
